@@ -1,0 +1,84 @@
+diff -u -r -x data HTS-demo_NIT-ATR503-M001_original/scripts/Config.pm.in HTS-demo_NIT-ATR503-M001/scripts/Config.pm.in
+--- HTS-demo_NIT-ATR503-M001_original/scripts/Config.pm.in	2015-12-21 17:36:06.000000000 +0900
++++ HTS-demo_NIT-ATR503-M001/scripts/Config.pm.in	2017-04-27 14:03:24.290016931 +0900
+@@ -176,7 +176,7 @@
+ # modeling
+ $nState      = @NSTATE@;        # number of states
+ $nIte        = @NITER@;         # number of iterations for embedded training
+-$beam        = '1500 100 5000'; # initial, inc, and upper limit of beam width
++$beam        = '3000 200 20000'; # initial, inc, and upper limit of beam width
+ $maxdev      = @MAXDEV@;        # max standard dev coef to control HSMM maximum duration
+ $mindur      = @MINDUR@;        # min state duration to be evaluated
+ $wf          = @WFLOOR@;        # mixture weight flooring
+diff -u -r -x data HTS-demo_NIT-ATR503-M001_original/Makefile.in HTS-demo_NIT-ATR503-M001/Makefile.in
+--- HTS-demo_NIT-ATR503-M001_original/Makefile.in	2015-12-25 21:06:27.000000000 +0900
++++ HTS-demo_NIT-ATR503-M001/Makefile.in	2020-08-31 13:14:53.498071655 +0900
+@@ -49,7 +49,7 @@
+ 
+ voice:
+ 	echo "Running a training/synthesis perl script (Training.pl) in background...."
+-	@PERL@ scripts/Training.pl scripts/Config.pm > log 2>&1 &
++	@PERL@ scripts/Training.pl ./scripts/Config.pm > log 2>&1 &
+ 
+ clean: clean-data clean-voice
+
+diff -u -r -x data HTS-demo_NIT-ATR503-M001_original/data/Makefile.in HTS-demo_NIT-ATR503-M001/data/Makefile.in
+--- HTS-demo_NIT-ATR503-M001_original/data/Makefile.in	2015-12-21 17:38:36.000000000 +0900
++++ HTS-demo_NIT-ATR503-M001/data/Makefile.in	2020-09-02 00:33:50.160466915 +0900
+@@ -102,7 +102,7 @@
+ 	# Extracting features from raw audio
+ 	mkdir -p mgc lf0 bap
+ 	SAMPKHZ=`echo $(SAMPFREQ) | $(X2X) +af | $(SOPR) -m 0.001 | $(X2X) +fa`; \
+-	for raw in raw/$(DATASET)_$(SPEAKER)_*.raw; do \
++	for raw in raw/*.raw; do \
+ 		base=`basename $${raw} .raw`; \
+ 		min=`$(X2X) +sf $${raw} | $(MINMAX) | $(X2X) +fa | head -n 1`; \
+ 		max=`$(X2X) +sf $${raw} | $(MINMAX) | $(X2X) +fa | tail -n 1`; \
+@@ -192,7 +192,7 @@
+ cmp: 
+ 	# Composing training data files from extracted features
+ 	mkdir -p cmp
+-	for raw in raw/$(DATASET)_$(SPEAKER)_*.raw; do \
++	for raw in raw/*.raw; do \
+ 		base=`basename $${raw} .raw`; \
+ 		echo "Composing training data for $${base}"; \
+ 		if [ $(USESTRAIGHT) -eq 0 ]; then \
+@@ -262,17 +262,17 @@
+ mlf:
+ 	# Generating monophone and fullcontext Master Label Files (MLF)
+ 	echo "#!MLF!#" > labels/mono.mlf
+-	echo "\"*/$(DATASET)_$(SPEAKER)_*.lab\" -> \"@PWD@/data/labels/mono\"" >> labels/mono.mlf
++	echo "\"*/*.lab\" -> \"@PWD@/data/labels/mono\"" >> labels/mono.mlf
+ 
+ 	echo "#!MLF!#" > labels/full.mlf
+-	echo "\"*/$(DATASET)_$(SPEAKER)_*.lab\" -> \"@PWD@/data/labels/full\"" >> labels/full.mlf
++	echo "\"*/*.lab\" -> \"@PWD@/data/labels/full\"" >> labels/full.mlf
+ 
+ list:
+ 	# Generating a fullcontext model list file
+ 	mkdir -p lists
+ 
+ 	rm -f tmp
+-	for lab in labels/full/$(DATASET)_$(SPEAKER)_*.lab; do \
++	for lab in labels/full/*.lab; do \
+ 		if [ -s $${lab} -a -s labels/mono/`basename $${lab}` -a -s cmp/`basename $${lab} .lab`.cmp ]; then \
+ 			sed -e "s/.* //g" $${lab} >> tmp; \
+ 		fi \
+@@ -291,7 +291,7 @@
+ 
+ 	# Generating a monophone list file
+ 	rm -f tmp
+-	for lab in labels/mono/$(DATASET)_$(SPEAKER)_*.lab; do \
++	for lab in labels/mono/*.lab; do \
+ 		if [ -s $${lab} -a -s labels/full/`basename $${lab}` -a -s cmp/`basename $${lab} .lab`.cmp ]; then \
+ 			sed -e "s/.* //g" $${lab} >> tmp; \
+ 		fi \
+@@ -304,7 +304,7 @@
+ 	mkdir -p scp
+ 
+ 	rm -f scp/train.scp
+-	for cmp in @PWD@/data/cmp/$(DATASET)_$(SPEAKER)_*.cmp; do \
++	for cmp in @PWD@/data/cmp/*.cmp; do \
+ 		if [ -s $${cmp} -a -s labels/mono/`basename $${cmp} .cmp`.lab -a -s labels/full/`basename $${cmp} .cmp`.lab ]; then \
+ 			echo $${cmp} >> scp/train.scp; \
+ 		fi \
